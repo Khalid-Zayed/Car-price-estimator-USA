@@ -349,19 +349,20 @@ with st.container():
         r_model = st.text_input("Car Model", key="req_model", placeholder="e.g. SF90 Stradale")
         r_trim  = st.text_input("Trim / Version (Optional)", key="req_trim", placeholder="e.g. Assetto Fiorano")
         r_year  = st.number_input("Year of Manufacture", min_value=1900, max_value=2026, value=2024, key="req_year")
-        r_miles = st.number_input("Current Odometer (Miles)", min_value=0, value=0, key="req_miles")
 
         st.markdown('<div class="submit-request-btn">', unsafe_allow_html=True)
         if st.button("SUBMIT REQUEST", key="req_submit"):
             if r_brand and r_model:
                 try:
-                    supabase.table("car_requests").insert({
+                    # Build payload — only include trim if it has a value
+                    payload = {
                         "brand": r_brand,
                         "model": r_model,
-                        "trim":  r_trim,
                         "year":  int(r_year),
-                        "miles": int(r_miles),
-                    }).execute()
+                    }
+                    if r_trim:
+                        payload["trim"] = r_trim
+                    supabase.table("car_requests").insert(payload).execute()
                     st.session_state.request_sent = True
                     st.rerun()
                 except Exception:
