@@ -7,7 +7,6 @@ import json
 from datetime import datetime
 
 # --- 1. SETUP ---
-# Ensure these match your Streamlit Secrets exactly
 groq_key = st.secrets.get("GROQ_API_KEY")
 sb_url = st.secrets.get("SUPABASE_URL")
 sb_key = st.secrets.get("SUPABASE_KEY")
@@ -21,7 +20,7 @@ supabase: Client = create_client(sb_url, sb_key)
 
 st.set_page_config(page_title="Run&Drive AI | Market Pro", layout="centered")
 
-# --- 2. CSS: PREMIUM LOOK + CURSOR FIX ---
+# --- 2. CSS: PREMIUM LOOK + SLIDE NOTIFICATION ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap');
@@ -34,7 +33,6 @@ st.markdown("""
     
     label, p, span, div, .stMarkdown { color: #000000 !important; font-weight: 700; }
     
-    /* --- INPUT FIELDS & BLINKING CURSOR FIX --- */
     .stTextInput input, .stNumberInput input {
         color: #000000 !important;
         background-color: #ffffff !important;
@@ -48,10 +46,9 @@ st.markdown("""
     .stTextInput input:focus, .stNumberInput input:focus {
         border: 2px solid #32cd32 !important; 
         box-shadow: 0 0 10px rgba(50, 205, 50, 0.4) !important; 
-        outline: none !important;
     }
 
-    /* --- THE BUTTON --- */
+    /* --- PRIMARY BUTTON --- */
     div.stButton > button:first-child { 
         background-color: #32cd32 !important; 
         color: #000000 !important;           
@@ -65,12 +62,18 @@ st.markdown("""
         transition: transform 0.2s ease;
         margin-top: 20px !important;
     }
+    div.stButton > button:first-child:hover { transform: scale(1.02) !important; }
 
-    div.stButton > button:first-child:hover { 
-        transform: scale(1.02) !important; 
+    /* --- REQUEST POPOVER STYLING --- */
+    div[data-testid="stPopover"] > button {
+        background-color: transparent !important;
+        color: #888 !important;
+        border: 1px solid #eee !important;
+        font-size: 0.8rem !important;
+        width: 100% !important;
+        margin-top: 10px !important;
     }
 
-    /* Result UI Cards */
     .stat-card { background: #ffffff; padding: 25px; border-radius: 15px; border: 1px solid #eee; border-bottom: 5px solid #32cd32; text-align: center; margin-bottom: 20px; }
     .stat-card h1 { color: #000000 !important; margin: 5px 0; font-weight: 900; font-size: 2.8rem; }
     .green-text { color: #32cd32 !important; }
@@ -100,6 +103,30 @@ with st.container():
     
     submit = st.button("RUN DEEP MARKET ANALYSIS")
 
+    # --- NEW REQUEST FEATURE ---
+    with st.popover("Can't find your car? Request adding it now"):
+        st.markdown("### Vehicle Support Request")
+        r_brand = st.text_input("Request Brand", key="r_brand")
+        r_model = st.text_input("Request Model", key="r_model")
+        r_year = st.number_input("Year", 1900, 2026, 2024, key="r_year")
+        r_trim = st.text_input("Trim", key="r_trim")
+        
+        if st.button("SUBMIT REQUEST"):
+            if r_brand and r_model:
+                try:
+                    supabase.table("car_requests").insert({
+                        "brand": r_brand,
+                        "model": r_model,
+                        "year": r_year,
+                        "trim": r_trim
+                    }).execute()
+                    # Slide-in toast replacement
+                    st.toast("🚀 Request received! Your car will be added shortly.", icon="✅")
+                except Exception as e:
+                    st.error(f"Request error: {e}")
+            else:
+                st.warning("Please enter Brand and Model.")
+
 # --- 5. EXECUTION ENGINE ---
 if submit and brand and model:
     with st.spinner("Analyzing Market Data..."):
@@ -109,7 +136,6 @@ if submit and brand and model:
         search_results = deep_market_search(f"{full_name} specs and market price")
         
         try:
-            # AI Prompt for Accuracy
             prompt = f"Verify and value {full_name} at {miles} miles. Use context: {search_results}. Return JSON: {{'exists': bool, 'price': 'str', 'trend': 'str', 'specs': {{'engine': 'str', 'hp': 'str', 'zero_sixty': 'str', 'top': 'str'}}, 'why': 'str'}}"
             
             response = client_groq.chat.completions.create(
@@ -123,7 +149,6 @@ if submit and brand and model:
             if not data.get("exists", True):
                 st.error(f"Analysis Rejected: {data['why']}")
             else:
-                # --- SUPABASE DEBUG LOGGING ---
                 try:
                     supabase.table("car_logs").insert({
                         "brand": brand,
@@ -133,12 +158,10 @@ if submit and brand and model:
                         "miles": miles,
                         "logic": data["why"]
                     }).execute()
-                    st.toast("✅ Logged to Admin Dashboard")
+                    st.toast("📊 Data Analyzed & Logged", icon="📈")
                 except Exception as e:
-                    # Capture exact error
-                    st.error(f"DETAILED SYNC ERROR: {e}") 
+                    st.error(f"SYNC ERROR: {e}") 
 
-                # --- DISPLAY RESULTS ---
                 st.markdown(f"<h2 style='text-align:center; color:black; margin-top:40px;'>{full_name}</h2>", unsafe_allow_html=True)
                 
                 res_c1, res_c2 = st.columns(2)
