@@ -48,7 +48,7 @@ st.markdown("""
     }
     label, p, span, div, .stMarkdown { color: #000000 !important; font-weight: 600; }
 
-    /* ── Input Fields ── */
+    /* ── Text Input Fields ── */
     .stTextInput input, .stNumberInput input {
         color: #000000 !important;
         background-color: #ffffff !important;
@@ -61,7 +61,29 @@ st.markdown("""
         box-shadow: 0 0 0 1px #32cd32 !important;
     }
 
-    /* ── PRIMARY BUTTON — green on ALL states ── */
+    /* ── Number Input stepper buttons (the +/- arrows) ── */
+    button[data-testid="stNumberInputStepDown"],
+    button[data-testid="stNumberInputStepUp"] {
+        background-color: #f5f5f5 !important;
+        color: #000000 !important;
+        border: 1px solid #e0e0e0 !important;
+    }
+    button[data-testid="stNumberInputStepDown"]:hover,
+    button[data-testid="stNumberInputStepUp"]:hover {
+        background-color: #32cd32 !important;
+        color: #000000 !important;
+        border-color: #32cd32 !important;
+    }
+
+    /* ── ALL BUTTONS — base reset so nothing goes black ── */
+    button {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border-color: #cccccc !important;
+    }
+
+    /* ── PRIMARY BUTTON (main green CTA) ── */
+    div[data-testid="stVerticalBlock"] div.stButton > button:first-child,
     div.stButton > button:first-child {
         background-color: #32cd32 !important;
         color: #000000 !important;
@@ -94,10 +116,28 @@ st.markdown("""
         box-shadow: 0 0 0 3px rgba(50,205,50,0.35) !important;
     }
 
-    /* ── POPOVER: force white regardless of browser dark mode ── */
-    div[data-testid="stPopover"] > div,
+    /* ── POPOVER TRIGGER BUTTON — white with green border ── */
+    div[data-testid="stPopover"] > button,
+    button[data-testid="stPopoverButton"],
+    div[data-testid="stPopover"] button {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border: 2px solid #32cd32 !important;
+        border-radius: 10px !important;
+        font-weight: 700 !important;
+        font-family: 'Montserrat', sans-serif !important;
+    }
+    div[data-testid="stPopover"] > button:hover,
+    div[data-testid="stPopover"] button:hover {
+        background-color: #f0fdf0 !important;
+        color: #000000 !important;
+        border-color: #28b828 !important;
+    }
+
+    /* ── POPOVER BODY — white regardless of browser dark mode ── */
     div[data-testid="stPopoverBody"],
-    section[data-testid="stPopoverBody"] {
+    section[data-testid="stPopoverBody"],
+    div[data-testid="stPopover"] > div {
         background-color: #ffffff !important;
         border: 2px solid #32cd32 !important;
         color: #000000 !important;
@@ -213,9 +253,9 @@ st.markdown('<p class="sub-title">Expert Market Intelligence</p>', unsafe_allow_
 with st.container():
     brand = st.text_input("Car Brand", placeholder="e.g. Mercedes-Benz")
     model = st.text_input("Car Model", placeholder="e.g. G63 AMG")
-    trim = st.text_input("Trim / Version (Optional)", placeholder="e.g. Magno Edition")
-    year = st.number_input("Year of Manufacture", 1900, 2026, 2024)
-    miles = st.number_input("Current Odometer (Miles)", 0, value=0)
+    trim  = st.text_input("Trim / Version (Optional)", placeholder="e.g. Magno Edition")
+    year  = st.number_input("Year of Manufacture", min_value=1900, max_value=2026, value=2024)
+    miles = st.number_input("Current Odometer (Miles)", min_value=0, value=0)
 
     submit = st.button("RUN DEEP MARKET ANALYSIS")
 
@@ -226,7 +266,7 @@ with st.container():
         )
         r_brand = st.text_input("Brand", key="req_b")
         r_model = st.text_input("Model", key="req_m")
-        r_year = st.number_input("Year", 1900, 2026, 2024, key="req_y")
+        r_year  = st.number_input("Year", min_value=1900, max_value=2026, value=2024, key="req_y")
 
         if st.button("SUBMIT REQUEST", key="req_submit"):
             if r_brand and r_model:
@@ -243,7 +283,7 @@ with st.container():
 
 # --- 6. AI EXECUTION & RESULTS ---
 if submit and brand and model:
-    full_name = f"{year} {brand} {model} {trim}".strip()
+    full_name     = f"{year} {brand} {model} {trim}".strip()
     miles_display = f"{int(miles):,}"
 
     with st.spinner(f"Scanning live market data for {full_name}..."):
@@ -260,7 +300,7 @@ if submit and brand and model:
                 f"Use this real-time market context:\n{search_results}\n\n"
                 f"Return a single JSON object with these exact keys:\n"
                 f"- exists (boolean): true if this is a real vehicle model, false if not\n"
-                f"- price (string): estimated market value range, e.g. '$85,000 – $95,000'\n"
+                f"- price (string): estimated market value range, e.g. '$85,000 - $95,000'\n"
                 f"- trend (string): one short phrase describing the market trend, e.g. 'Rising steadily'\n"
                 f"- specs: an object with keys engine, hp, zero_sixty, top (all strings)\n"
                 f"- why (string): 2-3 sentence explanation of the valuation and key factors\n"
@@ -270,14 +310,14 @@ if submit and brand and model:
             raw = client_groq.chat.completions.create(
                 messages=[
                     {"role": "system", "content": system_msg},
-                    {"role": "user", "content": prompt},
+                    {"role": "user",   "content": prompt},
                 ],
                 model="llama-3.3-70b-versatile",
                 temperature=0.1,
             ).choices[0].message.content
 
             cleaned = raw.replace("```json", "").replace("```", "").strip()
-            data = json.loads(cleaned)
+            data    = json.loads(cleaned)
 
         except json.JSONDecodeError:
             st.error("The AI returned an unexpected format. Please try again.")
@@ -294,7 +334,7 @@ if submit and brand and model:
             supabase.table("car_logs").insert({
                 "brand": brand,
                 "model": model,
-                "year": int(year),
+                "year":  int(year),
                 "price": data["price"],
                 "miles": int(miles),
                 "logic": data["why"],
@@ -302,7 +342,7 @@ if submit and brand and model:
         except Exception:
             pass
 
-        # Results Dashboard
+        # ── Results Dashboard ──
         icon = trend_icon(data["trend"])
 
         st.markdown(
