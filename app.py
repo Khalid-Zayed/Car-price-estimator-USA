@@ -174,6 +174,18 @@ st.markdown("""
         border-color: #28b828 !important;
     }
 
+    /* ── Hide the broken Material icon text (expand_more / expand_less) ── */
+    div[data-testid="stPopover"] button span[data-testid="stPopoverToggleIconOpen"],
+    div[data-testid="stPopover"] button span[data-testid="stPopoverToggleIconClosed"],
+    div[data-testid="stPopover"] > button > span:last-child {
+        display: none !important;
+    }
+    /* Broader catch — any span inside the popover button that isn't the label text */
+    div[data-testid="stPopover"] button .material-symbols-rounded,
+    div[data-testid="stPopover"] button [class*="material"] {
+        display: none !important;
+    }
+
     /* ── POPOVER BODY ── */
     div[data-testid="stPopoverBody"],
     section[data-testid="stPopoverBody"],
