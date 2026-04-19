@@ -28,7 +28,7 @@ st.markdown("""
     #MainMenu, footer, header, .stDeployButton,
     div[data-testid="stToolbar"] { visibility: hidden; display: none; }
 
-    /* ── Body font — bigger and more professional ── */
+    /* ── Body font ── */
     html, body, [class*="css"] {
         font-family: 'Montserrat', sans-serif !important;
         font-size: 16px !important;
@@ -81,7 +81,7 @@ st.markdown("""
         border: 2px solid #e0e0e0 !important;
         border-radius: 10px !important;
         padding: 0.6rem 0.9rem !important;
-        caret-color: #000000 !important;   /* FIX: blinking cursor now visible */
+        caret-color: #000000 !important;
     }
     .stTextInput input::placeholder, .stNumberInput input::placeholder {
         color: #aaaaaa !important;
@@ -94,7 +94,7 @@ st.markdown("""
         caret-color: #000000 !important;
     }
 
-    /* ── Number stepper +/- buttons ── */
+    /* ── Number stepper +/- ── */
     button[data-testid="stNumberInputStepDown"],
     button[data-testid="stNumberInputStepUp"] {
         background-color: #f4f4f4 !important;
@@ -109,7 +109,7 @@ st.markdown("""
         border-color: #32cd32 !important;
     }
 
-    /* ── Global button base (prevents dark-mode black override) ── */
+    /* ── Global button base ── */
     button {
         background-color: #ffffff !important;
         color: #000000 !important;
@@ -117,7 +117,7 @@ st.markdown("""
         font-family: 'Montserrat', sans-serif !important;
     }
 
-    /* ── PRIMARY CTA button — green, all states ── */
+    /* ── PRIMARY CTA — green, all states ── */
     div.stButton > button:first-child {
         background-color: #32cd32 !important;
         color: #000000 !important;
@@ -152,75 +152,54 @@ st.markdown("""
         box-shadow: 0 0 0 3px rgba(50,205,50,0.30) !important;
     }
 
-    /* ── POPOVER trigger button — slim white pill with green border ── */
-    div[data-testid="stPopover"] > button,
-    button[data-testid="stPopoverButton"],
-    div[data-testid="stPopover"] button {
+    /* ── REQUEST TOGGLE BUTTON — white with green border, auto width ── */
+    .request-toggle > div.stButton > button:first-child {
         background-color: #ffffff !important;
-        color: #222222 !important;
+        color: #111111 !important;
         border: 1.5px solid #32cd32 !important;
         border-radius: 10px !important;
         font-size: 0.88rem !important;
         font-weight: 700 !important;
-        font-family: 'Montserrat', sans-serif !important;
-        padding: 0.45rem 1rem !important;
         height: auto !important;
         width: auto !important;
+        min-width: 0 !important;
+        padding: 0.5rem 1.2rem !important;
+        letter-spacing: 0.3px !important;
+        margin-top: 0 !important;
     }
-    div[data-testid="stPopover"] > button:hover,
-    div[data-testid="stPopover"] button:hover {
+    .request-toggle > div.stButton > button:first-child:hover {
         background-color: #f2fdf2 !important;
         color: #000000 !important;
         border-color: #28b828 !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    .request-toggle > div.stButton > button:first-child:focus {
+        background-color: #ffffff !important;
+        color: #111111 !important;
+        border: 1.5px solid #32cd32 !important;
+        box-shadow: none !important;
     }
 
-    /* ── Hide the broken Material icon text (expand_more / expand_less) ── */
-    div[data-testid="stPopover"] button span[data-testid="stPopoverToggleIconOpen"],
-    div[data-testid="stPopover"] button span[data-testid="stPopoverToggleIconClosed"],
-    div[data-testid="stPopover"] > button > span:last-child {
-        display: none !important;
+    /* ── REQUEST PANEL card ── */
+    .request-panel {
+        background: #ffffff;
+        border: 2px solid #32cd32;
+        border-radius: 14px;
+        padding: 24px 28px;
+        margin-top: 12px;
     }
-    /* Broader catch — any span inside the popover button that isn't the label text */
-    div[data-testid="stPopover"] button .material-symbols-rounded,
-    div[data-testid="stPopover"] button [class*="material"] {
-        display: none !important;
-    }
-
-    /* ── POPOVER BODY ── */
-    div[data-testid="stPopoverBody"],
-    section[data-testid="stPopoverBody"],
-    div[data-testid="stPopover"] > div {
-        background-color: #ffffff !important;
-        border: 2px solid #32cd32 !important;
-        border-radius: 14px !important;
-        padding: 20px !important;
-        color: #000000 !important;
-    }
-    div[data-testid="stPopoverBody"] *,
-    section[data-testid="stPopoverBody"] * {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-    }
-    [data-baseweb="popover"] > div,
-    [data-baseweb="popover"] ul,
-    [data-baseweb="popover"] li {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-    }
-    div[data-testid="stPopoverBody"] input,
-    section[data-testid="stPopoverBody"] input {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-        border: 2px solid #e0e0e0 !important;
-        border-radius: 8px !important;
-        caret-color: #000000 !important;
-        font-size: 0.95rem !important;
-        font-weight: 600 !important;
+    .request-panel h3 {
+        font-family: 'Montserrat', sans-serif !important;
+        font-size: 1.05rem !important;
+        font-weight: 900 !important;
+        color: #32cd32 !important;
+        margin: 0 0 18px 0 !important;
+        letter-spacing: 0.5px;
     }
 
-    /* ── SUBMIT REQUEST button inside popover — compact, not fat ── */
-    div[data-testid="stPopoverBody"] div.stButton > button,
-    section[data-testid="stPopoverBody"] div.stButton > button {
+    /* ── SUBMIT REQUEST button inside panel — compact ── */
+    .submit-request-btn > div.stButton > button:first-child {
         background-color: #32cd32 !important;
         color: #000000 !important;
         font-weight: 800 !important;
@@ -231,13 +210,14 @@ st.markdown("""
         height: 2.6rem !important;
         border-radius: 8px !important;
         border: none !important;
-        padding: 0 1.2rem !important;
-        margin-top: 8px !important;
+        padding: 0 1.4rem !important;
+        margin-top: 10px !important;
+        transform: none !important;
     }
-    div[data-testid="stPopoverBody"] div.stButton > button:hover,
-    section[data-testid="stPopoverBody"] div.stButton > button:hover {
+    .submit-request-btn > div.stButton > button:first-child:hover {
         background-color: #28b828 !important;
         color: #000000 !important;
+        transform: none !important;
         border: none !important;
     }
 
@@ -331,7 +311,14 @@ def trend_icon(trend_str):
     return "─"
 
 
-# --- 5. INTERFACE ---
+# --- 5. SESSION STATE ---
+if "show_request" not in st.session_state:
+    st.session_state.show_request = False
+if "request_sent" not in st.session_state:
+    st.session_state.request_sent = False
+
+
+# --- 6. INTERFACE ---
 st.markdown('<h1 class="main-title">Run&Drive</h1>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Expert Market Intelligence</p>', unsafe_allow_html=True)
 
@@ -344,20 +331,27 @@ with st.container():
 
     submit = st.button("RUN DEEP MARKET ANALYSIS")
 
-    # ── Popover: all 5 fields matching the main form ──
-    with st.popover("Can't find your car? Request adding it now"):
-        st.markdown(
-            "<h3 style='color:#32cd32; font-family:Montserrat,sans-serif; "
-            "font-size:1.1rem; font-weight:900; margin-bottom:16px;'>"
-            "Vehicle Support Request</h3>",
-            unsafe_allow_html=True,
-        )
+    # ── Toggle button — plain st.button, no Streamlit popover icons ──
+    toggle_label = "▲  Hide Request Form" if st.session_state.show_request else "Can't find your car? Request adding it now"
+    st.markdown('<div class="request-toggle">', unsafe_allow_html=True)
+    if st.button(toggle_label, key="toggle_request"):
+        st.session_state.show_request = not st.session_state.show_request
+        st.session_state.request_sent = False
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # ── Request panel — shown/hidden via session state ──
+    if st.session_state.show_request:
+        st.markdown('<div class="request-panel">', unsafe_allow_html=True)
+        st.markdown('<h3>Vehicle Support Request</h3>', unsafe_allow_html=True)
+
         r_brand = st.text_input("Car Brand", key="req_brand", placeholder="e.g. Ferrari")
         r_model = st.text_input("Car Model", key="req_model", placeholder="e.g. SF90 Stradale")
-        r_trim  = st.text_input("Trim / Version (Optional)", key="req_trim",  placeholder="e.g. Assetto Fiorano")
+        r_trim  = st.text_input("Trim / Version (Optional)", key="req_trim", placeholder="e.g. Assetto Fiorano")
         r_year  = st.number_input("Year of Manufacture", min_value=1900, max_value=2026, value=2024, key="req_year")
         r_miles = st.number_input("Current Odometer (Miles)", min_value=0, value=0, key="req_miles")
 
+        st.markdown('<div class="submit-request-btn">', unsafe_allow_html=True)
         if st.button("SUBMIT REQUEST", key="req_submit"):
             if r_brand and r_model:
                 try:
@@ -368,14 +362,21 @@ with st.container():
                         "year":  int(r_year),
                         "miles": int(r_miles),
                     }).execute()
-                    st.toast("Request received!", icon="✅")
+                    st.session_state.request_sent = True
+                    st.rerun()
                 except Exception:
                     st.error("Database connection issue. Please try again.")
             else:
                 st.warning("Please fill in at least Brand and Model.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        if st.session_state.request_sent:
+            st.success("✅ Request received! We'll add this vehicle soon.")
+
+        st.markdown('</div>', unsafe_allow_html=True)
 
 
-# --- 6. AI & RESULTS ---
+# --- 7. AI & RESULTS ---
 if submit and brand and model:
     full_name     = f"{year} {brand} {model} {trim}".strip()
     miles_display = f"{int(miles):,}"
