@@ -20,7 +20,7 @@ supabase: Client = create_client(sb_url, sb_key)
 
 st.set_page_config(page_title="Run&Drive AI | Market Pro", layout="centered")
 
-# --- 2. CSS: PREMIUM LOOK + SLIDE NOTIFICATION ---
+# --- 2. CSS: PREMIUM LOOK + POPOVER VISIBILITY FIX ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap');
@@ -31,8 +31,10 @@ st.markdown("""
     .main-title { font-family: 'Montserrat', sans-serif; font-size: 4rem; color: #000000 !important; text-align: center; margin-bottom: 0px; }
     .sub-title { font-family: 'Montserrat', sans-serif; font-size: 1rem; color: #32cd32 !important; text-align: center; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 40px; }
     
+    /* Global Text visibility */
     label, p, span, div, .stMarkdown { color: #000000 !important; font-weight: 700; }
     
+    /* --- INPUT FIELDS FIX --- */
     .stTextInput input, .stNumberInput input {
         color: #000000 !important;
         background-color: #ffffff !important;
@@ -40,12 +42,10 @@ st.markdown("""
         border-radius: 8px !important;
         caret-color: #000000 !important; 
         cursor: text !important;
-        transition: all 0.3s ease;
     }
     
     .stTextInput input:focus, .stNumberInput input:focus {
         border: 2px solid #32cd32 !important; 
-        box-shadow: 0 0 10px rgba(50, 205, 50, 0.4) !important; 
     }
 
     /* --- PRIMARY BUTTON --- */
@@ -59,21 +59,32 @@ st.markdown("""
         border-radius: 12px !important; 
         height: 4.5rem !important; 
         border: none !important; 
-        transition: transform 0.2s ease;
-        margin-top: 20px !important;
     }
-    div.stButton > button:first-child:hover { transform: scale(1.02) !important; }
 
-    /* --- REQUEST POPOVER STYLING --- */
+    /* --- POPOVER VISIBILITY FIX --- */
+    /* This ensures the text inside the 'Request' box is always visible */
+    div[data-testid="stPopoverBody"] {
+        background-color: #ffffff !important;
+        border: 1px solid #32cd32 !important;
+        color: #000000 !important;
+    }
+    
+    /* Style the actual popover trigger button */
     div[data-testid="stPopover"] > button {
         background-color: transparent !important;
-        color: #888 !important;
-        border: 1px solid #eee !important;
-        font-size: 0.8rem !important;
+        color: #32cd32 !important;
+        border: 1px solid #32cd32 !important;
+        font-weight: 700 !important;
         width: 100% !important;
-        margin-top: 10px !important;
+        margin-top: 15px !important;
+        transition: 0.3s;
+    }
+    div[data-testid="stPopover"] > button:hover {
+        background-color: #32cd32 !important;
+        color: #ffffff !important;
     }
 
+    /* Result UI Cards */
     .stat-card { background: #ffffff; padding: 25px; border-radius: 15px; border: 1px solid #eee; border-bottom: 5px solid #32cd32; text-align: center; margin-bottom: 20px; }
     .stat-card h1 { color: #000000 !important; margin: 5px 0; font-weight: 900; font-size: 2.8rem; }
     .green-text { color: #32cd32 !important; }
@@ -95,23 +106,27 @@ st.markdown('<h1 class="main-title">Run&Drive</h1>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Expert Market Intelligence</p>', unsafe_allow_html=True)
 
 with st.container():
-    brand = st.text_input("Car Brand", placeholder="e.g. Maserati")
-    model = st.text_input("Car Model", placeholder="e.g. Ghibli")
-    trim = st.text_input("Trim / Version (Optional)", placeholder="e.g. Trofeo")
+    brand = st.text_input("Car Brand", placeholder="Enter brand name...")
+    model = st.text_input("Car Model", placeholder="Enter model name...")
+    trim = st.text_input("Trim / Version (Optional)", placeholder="e.g. Sport, Premium")
     year = st.number_input("Year of Manufacture", min_value=1900, max_value=2026, value=2024)
     miles = st.number_input("Current Odometer Reading (Miles)", min_value=0, value=0)
     
     submit = st.button("RUN DEEP MARKET ANALYSIS")
 
-    # --- NEW REQUEST FEATURE ---
-    with st.popover("Can't find your car? Request adding it now"):
-        st.markdown("### Vehicle Support Request")
-        r_brand = st.text_input("Request Brand", key="r_brand")
-        r_model = st.text_input("Request Model", key="r_model")
-        r_year = st.number_input("Year", 1900, 2026, 2024, key="r_year")
-        r_trim = st.text_input("Trim", key="r_trim")
+    # --- UPDATED REQUEST POPOVER ---
+    with st.popover("Can't find your car? Request it here"):
+        st.markdown("<h3 style='color:black;'>Vehicle Support Request</h3>", unsafe_allow_html=True)
+        st.write("Fill this out and we will add the data for this model soon.")
         
-        if st.button("SUBMIT REQUEST"):
+        r_brand = st.text_input("Car Brand", key="r_brand", placeholder="Brand name")
+        r_model = st.text_input("Car Model", key="r_model", placeholder="Model name")
+        r_year = st.number_input("Year", 1900, 2026, 2024, key="r_year")
+        r_trim = st.text_input("Trim", key="r_trim", placeholder="Specific version")
+        
+        req_submit = st.button("SUBMIT REQUEST")
+        
+        if req_submit:
             if r_brand and r_model:
                 try:
                     supabase.table("car_requests").insert({
@@ -120,12 +135,11 @@ with st.container():
                         "year": r_year,
                         "trim": r_trim
                     }).execute()
-                    # Slide-in toast replacement
-                    st.toast("🚀 Request received! Your car will be added shortly.", icon="✅")
+                    st.toast("🚀 Request received! We'll add this car shortly.", icon="✅")
                 except Exception as e:
                     st.error(f"Request error: {e}")
             else:
-                st.warning("Please enter Brand and Model.")
+                st.warning("Please fill in the Brand and Model.")
 
 # --- 5. EXECUTION ENGINE ---
 if submit and brand and model:
@@ -151,12 +165,8 @@ if submit and brand and model:
             else:
                 try:
                     supabase.table("car_logs").insert({
-                        "brand": brand,
-                        "model": model,
-                        "year": year,
-                        "price": data["price"],
-                        "miles": miles,
-                        "logic": data["why"]
+                        "brand": brand, "model": model, "year": year, 
+                        "price": data["price"], "miles": miles, "logic": data["why"]
                     }).execute()
                     st.toast("📊 Data Analyzed & Logged", icon="📈")
                 except Exception as e:
