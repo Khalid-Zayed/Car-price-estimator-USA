@@ -2,9 +2,12 @@ import streamlit as st
 from groq import Groq
 from duckduckgo_search import DDGS
 from supabase import create_client, Client
+from datetime import datetime
 import json
 
-# --- 1. CONFIG & SECRETS ---
+# ============================================================
+# 1. CONFIG & CLIENTS
+# ============================================================
 groq_key = st.secrets.get("GROQ_API_KEY")
 sb_url   = st.secrets.get("SUPABASE_URL")
 sb_key   = st.secrets.get("SUPABASE_KEY")
@@ -18,7 +21,9 @@ supabase: Client = create_client(sb_url, sb_key)
 
 st.set_page_config(page_title="Run&Drive AI | Market Pro", layout="centered")
 
-# --- 2. CSS ---
+# ============================================================
+# 2. CSS  (gatekeeper page + main dashboard)
+# ============================================================
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap');
@@ -50,7 +55,7 @@ st.markdown("""
         font-family: 'Montserrat', sans-serif !important;
     }
 
-    /* ── Page title ── */
+    /* ── Page titles ── */
     .main-title {
         font-family: 'Montserrat', sans-serif;
         font-size: 4.2rem;
@@ -69,6 +74,47 @@ st.markdown("""
         text-transform: uppercase;
         letter-spacing: 5px;
         margin-bottom: 44px;
+    }
+
+    /* ── Gatekeeper page ── */
+    .gate-wrapper {
+        max-width: 460px;
+        margin: 80px auto 0 auto;
+        text-align: center;
+    }
+    .gate-logo {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 3.6rem;
+        font-weight: 900;
+        color: #000000 !important;
+        letter-spacing: -2px;
+        margin-bottom: 4px;
+    }
+    .gate-sub {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #32cd32 !important;
+        text-transform: uppercase;
+        letter-spacing: 5px;
+        margin-bottom: 52px;
+    }
+    .gate-label {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #888888 !important;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+        text-align: left;
+    }
+    .gate-divider {
+        width: 48px;
+        height: 3px;
+        background: #32cd32;
+        border-radius: 2px;
+        margin: 0 auto 36px auto;
     }
 
     /* ── Text inputs ── */
@@ -152,7 +198,7 @@ st.markdown("""
         box-shadow: 0 0 0 3px rgba(50,205,50,0.30) !important;
     }
 
-    /* ── REQUEST TOGGLE BUTTON — white with green border, auto width ── */
+    /* ── REQUEST TOGGLE BUTTON ── */
     .request-toggle > div.stButton > button:first-child {
         background-color: #ffffff !important;
         color: #111111 !important;
@@ -181,7 +227,7 @@ st.markdown("""
         box-shadow: none !important;
     }
 
-    /* ── REQUEST PANEL card ── */
+    /* ── REQUEST PANEL ── */
     .request-panel {
         background: #ffffff;
         border: 2px solid #32cd32;
@@ -198,7 +244,7 @@ st.markdown("""
         letter-spacing: 0.5px;
     }
 
-    /* ── SUBMIT REQUEST button inside panel — compact ── */
+    /* ── SUBMIT REQUEST button — compact ── */
     .submit-request-btn > div.stButton > button:first-child {
         background-color: #32cd32 !important;
         color: #000000 !important;
@@ -287,12 +333,66 @@ st.markdown("""
         text-transform: uppercase;
         font-family: 'Montserrat', sans-serif !important;
     }
+
+    /* ── Welcome banner shown after login ── */
+    .welcome-bar {
+        background: #f4fdf4;
+        border: 1px solid #d0f0d0;
+        border-radius: 10px;
+        padding: 10px 18px;
+        margin-bottom: 28px;
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #228822 !important;
+        text-align: center;
+        font-family: 'Montserrat', sans-serif !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 
-# --- 3. SEARCH ---
-def deep_market_search(query):
+# ============================================================
+# 3. HELPER FUNCTIONS
+# ============================================================
+def is_valid_name(name: str) -> bool:
+    """Ask Groq to verify the input is a real human name."""
+    try:
+        resp = client_groq.chat.completions.create(
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a name validator. "
+                        "Reply with valid JSON only: {\"valid\": true} or {\"valid\": false}. "
+                        "Return true if the input looks like a real human name (first, last, or both). "
+                        "Return false for numbers, gibberish, single letters, symbols, or non-name words."
+                    ),
+                },
+                {"role": "user", "content": f"Is this a valid human name? Input: \"{name}\""},
+            ],
+            model="llama-3.3-70b-versatile",
+            temperature=0.0,
+            max_tokens=20,
+        ).choices[0].message.content
+        result = json.loads(resp.replace("```json", "").replace("```", "").strip())
+        return result.get("valid", False)
+    except Exception:
+        # Fallback: basic check — at least 2 chars, only letters/spaces/hyphens
+        return len(name.strip()) >= 2 and all(c.isalpha() or c in " -'" for c in name.strip())
+
+
+def log_user_access(name: str):
+    """Log authenticated user to user_access_logs table."""
+    try:
+        supabase.table("user_access_logs").insert({
+            "name": name.strip(),
+            "accessed_at": datetime.utcnow().isoformat(),
+        }).execute()
+    except Exception:
+        pass  # Silent fail — don't block access over a logging error
+
+
+def deep_market_search(query: str) -> str:
     try:
         with DDGS() as ddgs:
             results = ddgs.text(query, max_results=7)
@@ -301,8 +401,7 @@ def deep_market_search(query):
         return "Search unavailable."
 
 
-# --- 4. TREND ICON ---
-def trend_icon(trend_str):
+def trend_icon(trend_str: str) -> str:
     t = trend_str.lower()
     if any(w in t for w in ["up", "rising", "increas", "appreciat", "strong", "bull"]):
         return "▲"
@@ -311,16 +410,72 @@ def trend_icon(trend_str):
     return "─"
 
 
-# --- 5. SESSION STATE ---
+# ============================================================
+# 4. SESSION STATE INIT
+# ============================================================
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "user_name" not in st.session_state:
+    st.session_state.user_name = ""
 if "show_request" not in st.session_state:
     st.session_state.show_request = False
 if "request_sent" not in st.session_state:
     st.session_state.request_sent = False
 
 
-# --- 6. INTERFACE ---
+# ============================================================
+# 5. GATEKEEPER — blocks everything until name is validated
+# ============================================================
+if not st.session_state.authenticated:
+
+    # Centre the gate content
+    _, col, _ = st.columns([1, 2, 1])
+    with col:
+        st.markdown('<div class="gate-wrapper">', unsafe_allow_html=True)
+
+        st.markdown('<p class="gate-logo">Run&Drive</p>', unsafe_allow_html=True)
+        st.markdown('<p class="gate-sub">Expert Market Intelligence</p>', unsafe_allow_html=True)
+        st.markdown('<div class="gate-divider"></div>', unsafe_allow_html=True)
+        st.markdown('<p class="gate-label">Enter your name to continue</p>', unsafe_allow_html=True)
+
+        entered_name = st.text_input(
+            label="",
+            placeholder="e.g. Khalid Al-Rashid",
+            key="gate_name_input",
+            label_visibility="collapsed",
+        )
+
+        if st.button("ENTER", key="gate_submit"):
+            name_clean = entered_name.strip()
+            if not name_clean:
+                st.warning("Please enter your name.")
+            else:
+                with st.spinner("Verifying..."):
+                    if is_valid_name(name_clean):
+                        log_user_access(name_clean)
+                        st.session_state.authenticated = True
+                        st.session_state.user_name = name_clean
+                        st.rerun()
+                    else:
+                        st.error("That doesn't look like a valid name. Please enter your real name.")
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.stop()  # Hard stop — nothing below renders until authenticated
+
+
+# ============================================================
+# 6. MAIN DASHBOARD  (only reached after authentication)
+# ============================================================
 st.markdown('<h1 class="main-title">Run&Drive</h1>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Expert Market Intelligence</p>', unsafe_allow_html=True)
+
+# Welcome bar showing the logged-in user's name
+st.markdown(
+    f'<div class="welcome-bar">Welcome, {st.session_state.user_name} &nbsp;—&nbsp; '
+    f'your session is active</div>',
+    unsafe_allow_html=True,
+)
 
 with st.container():
     brand = st.text_input("Car Brand", placeholder="e.g. Mercedes-Benz")
@@ -331,7 +486,7 @@ with st.container():
 
     submit = st.button("RUN DEEP MARKET ANALYSIS")
 
-    # ── Toggle button — plain st.button, no Streamlit popover icons ──
+    # ── Request toggle ──
     toggle_label = "▲  Hide Request Form" if st.session_state.show_request else "Can't find your car? Request adding it now"
     st.markdown('<div class="request-toggle">', unsafe_allow_html=True)
     if st.button(toggle_label, key="toggle_request"):
@@ -340,7 +495,7 @@ with st.container():
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── Request panel — shown/hidden via session state ──
+    # ── Request panel ──
     if st.session_state.show_request:
         st.markdown('<div class="request-panel">', unsafe_allow_html=True)
         st.markdown('<h3>Vehicle Support Request</h3>', unsafe_allow_html=True)
@@ -354,7 +509,6 @@ with st.container():
         if st.button("SUBMIT REQUEST", key="req_submit"):
             if r_brand and r_model:
                 try:
-                    # Build payload — only include trim if it has a value
                     payload = {
                         "brand": r_brand,
                         "model": r_model,
@@ -377,7 +531,9 @@ with st.container():
         st.markdown('</div>', unsafe_allow_html=True)
 
 
-# --- 7. AI & RESULTS ---
+# ============================================================
+# 7. AI ANALYSIS & RESULTS
+# ============================================================
 if submit and brand and model:
     full_name     = f"{year} {brand} {model} {trim}".strip()
     miles_display = f"{int(miles):,}"
@@ -425,14 +581,16 @@ if submit and brand and model:
     if not data.get("exists", True):
         st.error(f"Vehicle not recognised: {data.get('why', 'Unknown vehicle model.')}")
     else:
+        # Log to car_logs — includes the user's name
         try:
             supabase.table("car_logs").insert({
-                "brand": brand,
-                "model": model,
-                "year":  int(year),
-                "price": data["price"],
-                "miles": int(miles),
-                "logic": data["why"],
+                "brand":     brand,
+                "model":     model,
+                "year":      int(year),
+                "price":     data["price"],
+                "miles":     int(miles),
+                "logic":     data["why"],
+                "user_name": st.session_state.user_name,
             }).execute()
         except Exception:
             pass
