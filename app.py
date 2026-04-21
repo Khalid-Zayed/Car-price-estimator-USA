@@ -440,7 +440,7 @@ if not st.session_state.authenticated:
 
         entered_name = st.text_input(
             label="",
-            placeholder="e.g. Khalid Al-Rashid",
+            placeholder="e.g. Khalid",
             key="gate_name_input",
             label_visibility="collapsed",
         )
