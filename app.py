@@ -440,7 +440,7 @@ if not st.session_state.authenticated:
 
         entered_name = st.text_input(
             label="",
-            placeholder="e.g. Khalid",
+            placeholder="e.g. Khalid Al-Rashid",
             key="gate_name_input",
             label_visibility="collapsed",
         )
@@ -597,10 +597,24 @@ if submit and brand and model:
 
         icon = trend_icon(data["trend"])
 
+        # Car image via Unsplash (free, no API key needed)
+        image_query = f"{brand} {model} {trim} car".strip().replace(" ", "%20")
+        image_url   = f"https://source.unsplash.com/1200x500/?{image_query}"
+
         st.markdown(
             f'<div class="car-header">'
             f'<h2>{full_name}</h2>'
             f'<small>{miles_display} miles on odometer</small>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            f'<div style="border-radius:16px; overflow:hidden; margin-bottom:24px; '
+            f'border: 1px solid #eeeeee; box-shadow: 0 4px 24px rgba(0,0,0,0.07);">'
+            f'<img src="{image_url}" style="width:100%; height:320px; '
+            f'object-fit:cover; display:block;" '
+            f'onerror="this.style.display:none">'
             f'</div>',
             unsafe_allow_html=True,
         )
