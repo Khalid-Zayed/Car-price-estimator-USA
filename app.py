@@ -597,9 +597,28 @@ if submit and brand and model:
 
         icon = trend_icon(data["trend"])
 
-        # Car image via Unsplash (free, no API key needed)
-        image_query = f"{brand} {model} {trim} car".strip().replace(" ", "%20")
-        image_url   = f"https://source.unsplash.com/1200x500/?{image_query}"
+        # Car image via Wikipedia free API (no key needed, always works)
+        def get_wiki_image(query):
+            import urllib.request, urllib.parse
+            try:
+                search_term = urllib.parse.quote(query)
+                api_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{search_term}"
+                req = urllib.request.Request(api_url, headers={"User-Agent": "RunDriveApp/1.0"})
+                with urllib.request.urlopen(req, timeout=4) as resp:
+                    info = __import__("json").loads(resp.read())
+                    thumb = info.get("thumbnail", {}).get("source", "")
+                    # Get full size version
+                    if thumb:
+                        return thumb.replace("/320px-", "/1200px-")
+            except Exception:
+                pass
+            return ""
+
+        wiki_query = f"{brand} {model}"
+        car_image_url = get_wiki_image(wiki_query)
+        # Fallback: try just brand if model page not found
+        if not car_image_url:
+            car_image_url = get_wiki_image(brand)
 
         st.markdown(
             f'<div class="car-header">'
@@ -609,15 +628,15 @@ if submit and brand and model:
             unsafe_allow_html=True,
         )
 
-        st.markdown(
-            f'<div style="border-radius:16px; overflow:hidden; margin-bottom:24px; '
-            f'border: 1px solid #eeeeee; box-shadow: 0 4px 24px rgba(0,0,0,0.07);">'
-            f'<img src="{image_url}" style="width:100%; height:320px; '
-            f'object-fit:cover; display:block;" '
-            f'onerror="this.style.display:none">'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+        if car_image_url:
+            st.markdown(
+                f'<div style="border-radius:16px; overflow:hidden; margin-bottom:24px; '
+                f'border: 1px solid #eeeeee; box-shadow: 0 4px 24px rgba(0,0,0,0.07);">'
+                f'<img src="{car_image_url}" style="width:100%; height:320px; '
+                f'object-fit:cover; object-position:center; display:block;">'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
 
         c1, c2 = st.columns(2)
         c1.markdown(
