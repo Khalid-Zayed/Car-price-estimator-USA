@@ -440,7 +440,7 @@ if not st.session_state.authenticated:
 
         entered_name = st.text_input(
             label="",
-            placeholder="e.g. Khalid Al-Rashid",
+            placeholder="e.g. Khalid Zayed",
             key="gate_name_input",
             label_visibility="collapsed",
         )
@@ -597,54 +597,28 @@ if submit and brand and model:
 
         icon = trend_icon(data["trend"])
 
-        # Car image via Wikipedia search API (free, no key, finds best match)
+        # Car image via Wikipedia free API (no key needed, always works)
         def get_wiki_image(query):
-            import urllib.request, urllib.parse, json as _json
-            headers = {"User-Agent": "RunDriveApp/1.0"}
+            import urllib.request, urllib.parse
             try:
-                # Step 1: search for the best matching Wikipedia article
-                search_url = (
-                    "https://en.wikipedia.org/w/api.php?action=query&list=search"
-                    f"&srsearch={urllib.parse.quote(query)}&srlimit=5&format=json"
-                )
-                req = urllib.request.Request(search_url, headers=headers)
-                with urllib.request.urlopen(req, timeout=4) as r:
-                    results = _json.loads(r.read())
-                    hits = results.get("query", {}).get("search", [])
-                    if not hits:
-                        return ""
-                    # Pick first result that looks like a car/auto article
-                    page_title = hits[0]["title"]
-                    for hit in hits:
-                        t = hit["title"].lower()
-                        if any(w in t for w in [query.split()[0].lower(), "car", "automobile", model.lower()]):
-                            page_title = hit["title"]
-                            break
-
-                # Step 2: get the image from that article
-                summary_url = (
-                    f"https://en.wikipedia.org/api/rest_v1/page/summary/"
-                    f"{urllib.parse.quote(page_title)}"
-                )
-                req2 = urllib.request.Request(summary_url, headers=headers)
-                with urllib.request.urlopen(req2, timeout=4) as r2:
-                    info = _json.loads(r2.read())
+                search_term = urllib.parse.quote(query)
+                api_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{search_term}"
+                req = urllib.request.Request(api_url, headers={"User-Agent": "RunDriveApp/1.0"})
+                with urllib.request.urlopen(req, timeout=4) as resp:
+                    info = __import__("json").loads(resp.read())
                     thumb = info.get("thumbnail", {}).get("source", "")
+                    # Get full size version
                     if thumb:
-                        # Upgrade to largest available size
-                        import re
-                        thumb = re.sub(r"/\d+px-", "/1200px-", thumb)
-                        return thumb
+                        return thumb.replace("/320px-", "/1200px-")
             except Exception:
                 pass
             return ""
 
-        # Try specific model first, then brand+model, then brand alone
-        car_image_url = (
-            get_wiki_image(f"{brand} {model} {trim}".strip()) or
-            get_wiki_image(f"{brand} {model}".strip()) or
-            get_wiki_image(brand)
-        )
+        wiki_query = f"{brand} {model}"
+        car_image_url = get_wiki_image(wiki_query)
+        # Fallback: try just brand if model page not found
+        if not car_image_url:
+            car_image_url = get_wiki_image(brand)
 
         st.markdown(
             f'<div class="car-header">'
